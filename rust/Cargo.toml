@@ -1,0 +1,15 @@
+[package]
+name = "aoc"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+
+
+[[bin]]
+name="01"
+path="days/01/solve.rs"
+
+[[bin]]
+name="02"
+path="days/02/solve.rs"
