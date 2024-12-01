@@ -1,8 +1,7 @@
 use std::env;
-use std::io;
-use std::fs;
-use std::io::BufRead;
 use std::collections::HashMap;
+use ::aoc;
+use ::std::io;
 
 struct Data {
     cols : [ Vec<i32>; 2 ],
@@ -17,15 +16,12 @@ impl Clone for Data {
 }
 
 fn parse_file( path : &str ) -> io::Result<Data> {
-    let file = fs::File::open( path )?;
-    let reader = io::BufReader::new( file );
 
     let mut res = Data {
         cols : [ Vec::new(), Vec::new() ],
     };
 
-    for line in reader.lines() {
-        let line = line?;
+    for line in aoc::file_lines( path )? {
         let mut col = 0;
         for tok in line.split_whitespace() {
             res.cols[col].push( tok.parse::<i32>().expect("invalid integer") );
