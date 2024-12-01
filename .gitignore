@@ -1,0 +1,4 @@
+**/input.txt
+**/*.o
+**/perf.data*
+**/.ycm_extra_conf.py
