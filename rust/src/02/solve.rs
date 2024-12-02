@@ -27,7 +27,7 @@ where
     I : Iterator<Item = i32> + Clone
 {
     first_order_difference(iter.clone()).all(|v| v >= 1 && v <= 3) ||
-    first_order_difference(iter.clone()).all(|v| v <= -1 && v >= -3)
+        first_order_difference(iter.all(|v| v <= -1 && v >= -3)
 }
 
 fn remove_item<'a, I>( iter : I, remove_idx : usize ) -> impl Iterator<Item = i32> + 'a + Clone
@@ -42,7 +42,10 @@ fn part1( cols : &Vec<Vec<i32>> ) -> usize {
 }
 
 fn part2( cols : &Vec<Vec<i32>> ) -> usize {
-    cols.iter().filter( |&row| (0..row.len()+1).any( |ignore| accept( remove_item( row.iter().map(|v| *v), ignore ) ) )).count()
+    cols.iter().filter(
+        |&row| (0..row.len()+1).any(
+            |ignore| accept( remove_item( row.iter().map(|v| *v), ignore ) ) )
+        ).count()
 }
 
 fn main() -> io::Result<()> {
