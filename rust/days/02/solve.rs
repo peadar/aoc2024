@@ -3,15 +3,11 @@ use std::env;
 use ::aoc;
 
 fn parse_file( path : &str ) -> io::Result<Vec<Vec<i32>>> {
-    let mut res = Vec::new();
-    for line in aoc::file_lines( path )? {
-        let mut row : Vec<i32> = Vec::new();
-        for tok in line.split_whitespace() {
-            row.push( tok.parse::<i32>().expect("invalid integer") );
-        }
-        res.push( row );
-     }
-    Ok(res)
+    Ok( aoc::file_lines( path )?
+        .map( | line | line.split_whitespace()
+            .map( |token| token.parse::<i32>().expect("not an int?") )
+            .collect())
+        .collect() )
 }
 
 fn first_order_difference<'a, I>( mut iter : I ) -> impl Iterator<Item = i32> + 'a
