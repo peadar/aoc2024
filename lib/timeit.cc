@@ -1,23 +1,35 @@
-#include <chrono>
 #include <functional>
 #include <iostream>
 
 #include <signal.h>
 #include <unistd.h>
 
+#if 1
+#include <boost/chrono.hpp>
+using namespace boost::chrono;
+using Clock = process_cpu_clock;
+#else
+#include <chrono>
+using namespace std::chrono;
+using Clock = high_resolution_clock;
+#endif
+
+
+
 void
 timeit(std::function<void(void)> f) {
+    //using Clock = std::chrono::high_resolution_clock;
     std::cerr << "running payload...";
     static volatile bool done;
     done = false;
     signal(SIGALRM, [] (int) { done = true; } );
     alarm(10);
-    auto start = std::chrono::high_resolution_clock::now();
+    auto start = Clock::now();
     unsigned long long iters;
     for (iters = 0; !done; ++iters)
         f();
-    auto end = std::chrono::high_resolution_clock::now();
-    auto micros = std::chrono::duration_cast<std::chrono::microseconds>(
+    auto end = Clock::now();
+    auto micros = duration_cast<microseconds>(
           end - start).count();
     double secondsfloat = double(micros) / 1000000;
     auto persec = double(iters) / double(secondsfloat);

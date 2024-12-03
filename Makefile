@@ -3,3 +3,5 @@ MAKES=$(shell echo [0-9]*/Makefile )
 
 %:
 	for i in $(MAKES); do make -C $$(dirname $$i) $@; done
+
+

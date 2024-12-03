@@ -8,8 +8,16 @@ edition = "2021"
 
 [[bin]]
 name="01"
-path="src/01/solve.rs"
+path="01/solve.rs"
 
 [[bin]]
 name="02"
-path="src/02/solve.rs"
+path="02/solve.rs"
+
+[[bin]]
+name="04"
+path="04/solve.rs"
+
+[lib]
+name="aoc"
+path="lib/lib.rs"
