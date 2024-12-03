@@ -64,7 +64,6 @@ struct Part1 {
                break;
          }
       }
-
    }
    unsigned solve() const {
       return total;
@@ -74,7 +73,8 @@ struct Part1 {
 struct Part2 {
    enum {
       wait_oparen,
-      wait_argdata,
+      wait_argstart,
+      wait_argcont,
    };
    long args[2];
    long argidx {};
@@ -99,43 +99,48 @@ struct Part2 {
       } else if (tokcmp("do")) {
          enabled = true;
       } else if (tokcmp("mul")) {
-         if (enabled) {
-            assert(argidx == 1);
+         if (argidx == 1) {
             total += args[0] * args[1];
          }
       }
    }
 
    Part2(std::istream &in) {
-      unsigned read = 0;
       for (auto state = wait_oparen;; ) {
          char c = in.get();
-         read++;
-         std::cout << c << std::flush;
          if (!in)
             break;
          switch (state) {
             case wait_oparen:
                if (c == '(') {
-                  argidx = 0;
-                  args[0] = 0;
-                  state = wait_argdata;
+                  argidx = -1;
+                  state = wait_argstart;
                } else {
                   tokbuf[toknext++ % (sizeof tokbuf)] = c;
                }
                break;
 
-            case wait_argdata:
+            case wait_argstart:
+               if (isdigit(c)) {
+                  args[++argidx] = 0;
+                  state = wait_argcont;
+                  goto argcont;
+               } else {
+                  if ( c == ')' && argidx == -1)
+                     execute();
+                  state = wait_oparen;
+               }
+               break;
+argcont:
+            case wait_argcont:
                if (isdigit(c)) {
                   args[argidx] = args[argidx] * 10 + c - '0';
                } else if (c == ',') {
-                  args[++argidx] = 0;
+                  state = wait_argstart;
                } else {
-                  if (c == ')') {
+                  if (c == ')')
                      execute();
-                  }
-                  argidx = 0;
-                  args[argidx] = 0;
+                  argidx = -1;
                   state = wait_oparen;
                }
                break;
