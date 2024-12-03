@@ -29,7 +29,7 @@ struct Parser {
 
    template <typename Strategy>
    Parser(std::istream &in, const Strategy strategy) {
-      char c;
+      int c;
       auto rb = in.rdbuf();
       for (auto state = ident; c=rb->sbumpc(), c!=EOF; ) {
          switch (state) {
