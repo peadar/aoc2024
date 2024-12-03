@@ -16,7 +16,7 @@ struct Parser {
    int argidx {}; // current argument being calculated.
    int toknext {}; // next element in tokbuf to update.
    bool enabled { true };
-   char tokbuf[5]{}; // last N characters. enough to store 'don't', our longest ident.
+   char tokbuf[8]{}; // last N characters. enough to store 'don't', our longest ident.
 
    // Check if the token buffer ends with 'tok'
    bool tokcmp(std::string_view tok) {
