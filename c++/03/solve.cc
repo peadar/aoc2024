@@ -33,9 +33,9 @@ struct Parser {
 
    template <typename Strategy>
    Parser(std::istream &in, Strategy strategy) {
-      unsigned argidx {}; // current argument being calculated.
+      unsigned argidx{}; // current argument being calculated.
       int c;
-      uint64_t token;
+      uint64_t token{};
       std::streambuf * rb = in.rdbuf();
 
       for (auto state = start; c=rb->sbumpc(), c!=EOF; ) {
