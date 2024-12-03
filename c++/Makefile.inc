@@ -16,8 +16,8 @@ solve: $(PARTOBJS) aoc-main.o timeit.o
 	$(CXX) -o $@ $^
 
 check: all
-	./solve ../data/`basename $$PWD`.txt
+	./solve ../../data/`basename $$PWD`.txt
 time: all
-	./solve -t ../data/`basename $$PWD`.txt
+	./solve -t ../../data/`basename $$PWD`.txt
 clean:
 	rm -f *.o solve core.*

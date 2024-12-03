@@ -1,74 +1,103 @@
 #include "../aoc.h"
-#include <ctype.h>
 namespace {
 
 struct Parser {
-   enum {
-      wait_oparen,
-      wait_argstart,
-      wait_argcont,
+   using Integer = int; // the integer type we calculate with. Everything fits in 'int'
+   enum State {
+      ident,            // epxecting first/next char of an identifier.
+      firstarg,         // expecting the first char in the first arg.
+      notfirstarg,      // expecting the first digit in the second or successive arg.
+      argrest,          // expecting the second or subsequent digit in an arg.
    };
-   long args[2];
-   long argidx {};
-   long total {};
-   char tokbuf[5]; // enough to store 'don't'
-   int toknext {};
-   bool enabled { true };
 
-   bool tokcmp(const char *p) {
+   static const int maxargs = 2;
+   Integer total {}; // accumulator for the answer.
+   Integer args[maxargs]; // arguments to the instruction
+   int argidx {}; // current argument being calculated.
+   int toknext {}; // next element in tokbuf to update.
+   bool enabled { true };
+   char tokbuf[5]{}; // last N characters. enough to store 'don't', our longest ident.
+
+   // Check if the token buffer ends with 'tok'
+   bool tokcmp(std::string_view tok) {
       size_t off = toknext + sizeof tokbuf - 1;
-      for (auto e = p + strlen(p);  e-- != p;) {
-         if (tokbuf[off-- % sizeof tokbuf] != *e)
+      for (auto e = tok.size();  e-- != 0; )
+         if (tokbuf[off-- % sizeof tokbuf] != tok[e])
             return false;
-      }
       return true;
    }
 
    template <typename Strategy>
    Parser(std::istream &in, const Strategy strategy) {
       char c;
-      for (auto state = wait_oparen; c=in.get(), in; ) {
+      auto rb = in.rdbuf();
+      for (auto state = ident; c=rb->sbumpc(), c!=EOF; ) {
          switch (state) {
-            case wait_oparen:
-oparen:
-               if (c == '(') {
-                  argidx = -1;
-                  state = wait_argstart;
-               } else {
-                  tokbuf[toknext++ % (sizeof tokbuf)] = c;
+            case ident:
+ident:
+               switch (c) {
+                  case '(':
+                     argidx = -1;
+                     state = firstarg;
+                     break;
+                  default:
+                     tokbuf[toknext++ % (sizeof tokbuf)] = c;
+                     break;
                }
                break;
 
-            case wait_argstart:
-               if (isdigit(c)) {
-                  args[++argidx] = 0;
-                  state = wait_argcont;
-                  goto argcont;
-               } else {
-                  if ( c == ')' && argidx == -1)
+            case firstarg:
+               switch (c) {
+                  case ')':
                      strategy(*this);
-                  state = wait_oparen;
-                  goto oparen;
+                     state = ident;
+                     break;
+                  case '0'...'9':
+                     args[++argidx] = c - '0';
+                     state = argrest;
+                     break;
+                  default:
+                     state = ident;
+                     goto ident;
                }
                break;
-argcont:
-            case wait_argcont:
-               if (isdigit(c)) {
-                  args[argidx] = args[argidx] * 10 + c - '0';
-               } else if (c == ',') {
-                  state = wait_argstart;
-               } else {
-                  if (c == ')')
+
+            case notfirstarg:
+               switch (c) {
+                  case '0'...'9':
+                     args[++argidx] = c - '0';
+                     state = argrest;
+                     break;
+                  default:
+                     state = ident;
+                     goto ident;
+               }
+               break;
+
+            case argrest:
+               switch (c) {
+                  case '0'...'9':
+                     args[argidx] = args[argidx] * 10 + c - '0';
+                     break;
+                  case ',':
+                     if (argidx == maxargs - 1) [[unlikely]]
+                        state = ident;
+                     else
+                        state = notfirstarg;
+                     break;
+                  case ')':
                      strategy(*this);
-                  argidx = -1;
-                  state = wait_oparen;
-                  goto oparen;
+                     state = ident;
+                     break;
+                  default:
+                     state = ident;
+                     goto ident;
                }
                break;
          }
       }
    }
-   unsigned solve() const {
+   long solve() const {
       return total;
    }
 };
@@ -86,10 +115,8 @@ struct Part2Strategy {
          p.enabled = false;
       } else if (p.tokcmp("do")) {
          p.enabled = true;
-      } else if (p.tokcmp("mul")) {
-         if (p.enabled && p.argidx == 1) {
-            p.total += p.args[0] * p.args[1];
-         }
+      } else if (p.enabled && p.argidx == 1 && p.tokcmp("mul")) {
+         p.total += p.args[0] * p.args[1];
       }
    }
 };
