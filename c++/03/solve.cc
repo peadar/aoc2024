@@ -1,16 +1,16 @@
 #include "aoc.h"
 namespace {
 
-enum {
-   wait_m,
-   wait_u,
-   wait_l,
-   wait_lparen,
-   wait_firstint,
-   wait_secondint,
-};
-
 struct Part1 {
+   enum {
+      wait_m,
+      wait_u,
+      wait_l,
+      wait_lparen,
+      wait_firstint,
+      wait_secondint,
+   };
+
    long first{}, second{}, total{};
 
    Part1(std::istream &in) {
@@ -70,13 +70,83 @@ struct Part1 {
       return total;
    }
 };
+
 struct Part2 {
-   Part2(std::istream &) {
+   enum {
+      wait_oparen,
+      wait_argdata,
+   };
+   long args[2];
+   long argidx {};
+   long total {};
+   char tokbuf[5]; // enough to store 'don't'
+   int toknext {};
+   bool enabled { true };
+
+
+   bool tokcmp(const char *p) {
+      size_t off = toknext + sizeof tokbuf - 1;
+      for (auto e = p + strlen(p);  e-- != p;) {
+         if (tokbuf[off-- % sizeof tokbuf] != *e)
+            return false;
+      }
+      return true;
    }
-   unsigned solve() {
-      return 0;
+
+   void execute() {
+      if (tokcmp("don't")) {
+         enabled = false;
+      } else if (tokcmp("do")) {
+         enabled = true;
+      } else if (tokcmp("mul")) {
+         if (enabled) {
+            assert(argidx == 1);
+            total += args[0] * args[1];
+         }
+      }
+   }
+
+   Part2(std::istream &in) {
+      unsigned read = 0;
+      for (auto state = wait_oparen;; ) {
+         char c = in.get();
+         read++;
+         std::cout << c << std::flush;
+         if (!in)
+            break;
+         switch (state) {
+            case wait_oparen:
+               if (c == '(') {
+                  argidx = 0;
+                  args[0] = 0;
+                  state = wait_argdata;
+               } else {
+                  tokbuf[toknext++ % (sizeof tokbuf)] = c;
+               }
+               break;
+
+            case wait_argdata:
+               if (isdigit(c)) {
+                  args[argidx] = args[argidx] * 10 + c - '0';
+               } else if (c == ',') {
+                  args[++argidx] = 0;
+               } else {
+                  if (c == ')') {
+                     execute();
+                  }
+                  argidx = 0;
+                  args[argidx] = 0;
+                  state = wait_oparen;
+               }
+               break;
+         }
+      }
+   }
+   unsigned solve() const {
+      return total;
    }
 };
+
 
 }
 
