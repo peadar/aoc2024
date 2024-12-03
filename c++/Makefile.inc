@@ -13,8 +13,8 @@ all: solve
 	$(CXX) $(ASFLAGS) -S -o $@ $^
 
 solve: $(PARTOBJS) aoc-main.o timeit.o
-	$(CXX) -o $@ $^
-
+	$(CXX) -o $@ $^  -lboost_chrono
+ 
 check: all
 	./solve ../../data/`basename $$PWD`.txt
 time: all
