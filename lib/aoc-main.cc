@@ -13,19 +13,28 @@ Case::Case(std::string_view name, Executor callable) {
 
 }
 
-struct SB : std::streambuf {
+struct MemReader : std::streambuf {
    std::vector<char> vec;
-   SB() {}
-   SB(std::vector<char> &&vec) : vec(vec) {
+   MemReader() {}
+   MemReader(std::vector<char> &&vec) : vec(vec) {
       reset();
    }
    void reset() {
       setg(vec.data(), vec.data(), vec.data() + vec.size());
    }
-   SB &operator = (std::vector<char> &&rhs) {
+   MemReader &operator = (std::vector<char> &&rhs) {
       vec = std::move(rhs);
       reset();
       return *this;
+   }
+};
+
+struct DiscardingWriter : std::streambuf {
+   int overflow(int val) override {
+      return val == EOF ? EOF : 0;
+   }
+   std::streamsize xsputn( const char *, std::streamsize n ) override {
+      return n;
    }
 };
 
@@ -60,17 +69,18 @@ int main(int argc, char *argv[]) {
 
    std::ifstream in( argv[optind], std::ifstream::binary);
    std::fstream null;
-   SB sb;
+   MemReader inbuf;
+   DiscardingWriter outbuf;
    std::function<aoc::Executor (aoc::Executor)> wrap;
    if (do_timeit) {
-      null = std::fstream("/dev/null");
-      sb = bufferis(in);
+      inbuf = bufferis(in);
       wrap = [&] (aoc::Executor e) -> aoc::Executor {
          return [&, e](std::istream &, std::ostream &) {
             timeit([&, e] {
-                  sb.reset();
-                  std::istream memin(&sb);
-                  e(memin, null);
+                  inbuf.reset();
+                  std::istream memin(&inbuf);
+                  std::ostream noout(&outbuf);
+                  e(memin, noout);
                   });
          };
       };
