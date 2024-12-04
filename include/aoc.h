@@ -1,3 +1,4 @@
+#pragma once
 #include <bits/stdc++.h>
 
 void timeit(std::function<void(void)>);

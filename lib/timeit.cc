@@ -23,7 +23,7 @@ timeit(std::function<void(void)> f) {
     static volatile bool done;
     done = false;
     signal(SIGALRM, [] (int) { done = true; } );
-    alarm(10);
+    alarm(4);
     auto start = Clock::now();
     unsigned long long iters;
     for (iters = 0; !done; ++iters)
