@@ -13,7 +13,6 @@ struct Parse {
    };
    std::vector<Eqn> eqns;
    Parse(std::istream &is) noexcept {
-      eqns.reserve(1000);
       for (std::string line; getline(is, line);)
          eqns.emplace_back(line);
    }
@@ -21,29 +20,24 @@ struct Parse {
       return std::accumulate( eqns.begin(), eqns.end(), 0ULL, [exprval]( Int term, const Eqn &eqn) {
             return term + exprval(eqn);} );
    }
+   template <typename T> static Int total_if_solvable( const Eqn &eqn ) noexcept {
+      return total_if_solvable_r<T>( eqn, eqn.terms[0], 1) ? eqn.total : 0;
+   }
+
+   template <typename T> static bool total_if_solvable_r( const Eqn &eqn, Int accum, unsigned idx ) noexcept {
+      if (idx == eqn.terms.size())
+         return accum == eqn.total;
+      return T::template total_if_solvable_part<T>( eqn, accum, idx);
+   }
 };
 
 struct Part1 : Parse {
    Part1( std::istream &is) : Parse( is ) {}
-   static Int total_if_solvable( const Eqn &eqn ) {
-      unsigned combos = 1 << (eqn.terms.size() - 1);
-      for (unsigned combo = 0; combo < combos; ++combo) {
-         auto start = eqn.terms.begin();
-         Int sofar = *start++;
-         auto end = eqn.terms.end();
-         for (unsigned mask = combo; start != end && sofar <= eqn.total; mask >>= 1) {
-            Int rhs = *start++;
-            if ((mask & 1) != 0)
-               sofar *= rhs;
-            else
-               sofar += rhs;
-         }
-         if (sofar == eqn.total)
-            return sofar;
-      }
-      return 0;
+   template <typename T> static bool total_if_solvable_part( const Eqn &eqn, Int accum, unsigned idx ) noexcept {
+      return total_if_solvable_r<T>( eqn, accum + eqn.terms[idx], idx + 1) ||
+         total_if_solvable_r<T>( eqn, accum * eqn.terms[idx], idx + 1);
    }
-   Int solve() const noexcept { return accumulate(total_if_solvable) ; }
+   Int solve() const noexcept { return accumulate(total_if_solvable<Part1>) ; }
 };
 
 struct Part2 : Parse {
@@ -53,30 +47,12 @@ struct Part2 : Parse {
          l *= 10;
       return l + r;
    }
-   static Int total_if_solvable( const Eqn &eqn ) noexcept {
-      auto p1 = Part1::total_if_solvable(eqn);
-      if (p1) // removing all the combos that don't require "concat" first helps a lot.
-         return p1;
-      unsigned combos = unsigned(pow(3, eqn.terms.size() - 1));
-      for (unsigned combo = 0; combo < combos; ++combo) {
-         auto start = eqn.terms.begin();
-         Int sofar = *start++;
-         auto end = eqn.terms.end();
-         for (unsigned mask = combo; start != end && sofar <= eqn.total; mask /= 3) {
-            Int rhs = *start++;
-            switch (mask % 3) {
-               // XXX: these should all be checked for overflow.
-               case 0: sofar *= rhs; break;
-               case 1: sofar += rhs; break;
-               case 2: sofar = concat(sofar, rhs); break;
-            }
-         }
-         if (sofar == eqn.total)
-            return sofar;
-      }
-      return 0;
+   template<typename T>
+   static bool total_if_solvable_part( const Eqn &eqn, Int accum, unsigned idx ) noexcept {
+      return (Part1::total_if_solvable_part<T>(eqn, accum, idx) ||
+            total_if_solvable_r<T>(eqn, concat(accum, eqn.terms[idx]), idx + 1));
    }
-   Int solve() const noexcept { return accumulate(total_if_solvable) ; }
+   Int solve() const noexcept { return accumulate(total_if_solvable<Part2>) ; }
 };
 
 aoc::Case part1("part1", [](std::istream &is, std::ostream &os) {os << Part1( is ).solve();});
