@@ -19,12 +19,16 @@ inline std::pair<String, String> token(const String line, const std::string_view
         return { line.substr(0, split), line.substr(split + sep.size()) };
 }
 
-template <typename String, typename Value> bool
-parsetoken(String &line, Value &value, const std::string_view sep = " ") {
+template <typename String, typename Value>
+Value
+parsetoken(String &line, const std::string_view sep = " ") {
    String tok;
    std::tie(tok, line) = token(line, sep);
+   Value value;
    auto fcr = std::from_chars( tok.data(), tok.data() + tok.size(), value );
-   return fcr.ptr  != tok.data();
+   if (fcr.ptr == tok.data())
+      throw std::logic_error("parse failed");
+   return value;
 }
 
 }
