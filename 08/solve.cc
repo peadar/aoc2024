@@ -64,7 +64,7 @@ struct Part1 {
       for (auto &[c, cpoints] : input.points)
          for (const P &a : cpoints)
             for (const P &b : cpoints) {
-               if (a == b)
+               if (&a == &b)
                   continue;
                auto anti = b + (b - a);
                if (input.dimensions.contains(anti))
