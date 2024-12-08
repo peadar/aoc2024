@@ -20,59 +20,81 @@ template <typename Scalar> struct Point {
 
 namespace std {
 template <typename T> struct hash<Point<T>> {
-   size_t operator() (const Point<T> &p) const noexcept { return p.row * 50 + p.col; }
+   size_t operator() (const Point<T> &p) const noexcept { return p.row * 65537 + p.col; }
 };
 }
-using Int = int;
-using P = Point<Int>;
-using PointSet = std::unordered_set<P>;
-struct Input {
-   std::unordered_map<char, PointSet> points;
-   P size{};
-   Input(std::istream &is) {
-      for (std::string line; getline(is, line);) {
-         size.col = 0;
-         for (char c : line) {
-            if (c != '.')
-               points[c].insert(size);
-            ++size.col;
-         }
-         ++size.row;
-      }
+
+template <typename Scalar> struct Box {
+   using P = Point<Scalar>;
+   std::pair<P, P> extent {};
+   Box(P a, P b) noexcept : extent { a, b } {}
+   Box() noexcept : extent {} {}
+   bool contains (const P &p) const noexcept {
+      return p.row >= extent.first.row && p.col >= extent.first.col &&
+         p.row < extent.second.row && p.col < extent.second.col;
    }
 };
-struct Part1 : Input {
-   Part1(std::istream &is) : Input(is) { }
+
+using Int = int;
+using P = Point<Int>;
+using Ps = std::unordered_set<P>;
+struct Input {
+   std::unordered_map<char, Ps> points;
+   Box<Int> dimensions{};
+   Input(std::istream &is) {
+      P curpos;
+      for (std::string line; getline(is, line);) {
+         curpos.col = 0;
+         for (char c : line) {
+            if (c != '.')
+               points[c].insert(curpos);
+            ++curpos.col;
+         }
+         ++curpos.row;
+      }
+      dimensions = { {0,0}, curpos };
+   }
+};
+
+struct Part1 {
+   const Input &input;
+   Part1(const Input &input) : input(input) { }
    Int solve() const noexcept {
-      PointSet antinodes;
-      for (auto &[c, cpoints] : points)
+      Ps antinodes;
+      for (auto &[c, cpoints] : input.points)
          for (const P &a : cpoints)
             for (const P &b : cpoints) {
                if (a == b)
                   continue;
                auto anti = b + (b - a);
-               if (anti.row >= 0 && anti.col >= 0 && anti.row < size.row && anti.col < size.col)
+               if (input.dimensions.contains(anti))
                   antinodes.insert(anti);
             }
       return antinodes.size();
    }
 };
-struct Part2 : Input {
-   Part2(std::istream &is) : Input(is) {}
+
+struct Part2 {
+   const Input &input;
+   Part2(const Input &input) : input(input) { }
    Int solve() const noexcept {
-      PointSet antinodes;
-      for (auto &[c, cpoints] : points)
+      Ps antinodes;
+      for (auto &[c, cpoints] : input.points)
          for (auto ia = cpoints.begin(); ia != cpoints.end() ; ++ia)
             for (auto ib = cpoints.begin(); ib != cpoints.end() ; ++ib) {
                if (ia == ib)
                   continue;
                auto diff = *ib - *ia;
-               for (auto p = *ia; p.row < size.row && p.col < size.col && p.row >= 0 && p.col >= 0; p += diff)
+               for (auto p = *ia + diff; input.dimensions.contains(p); p += diff)
                   antinodes.insert(p);
             }
       return antinodes.size();
    }
 };
-aoc::Case part1("part1", [](std::istream &is, std::ostream &os) {os << Part1{is}.solve();});
-aoc::Case part2("part2", [](std::istream &is, std::ostream &os) {os << Part2{is}.solve();});
+
+aoc::Case part1("part1", [](std::istream &is, std::ostream &os) {os << Part1{Input{is}}.solve();});
+aoc::Case part2("part2", [](std::istream &is, std::ostream &os) {os << Part2{Input{is}}.solve();});
+aoc::Case both("both", [](std::istream &is, std::ostream &os) {
+      Input i{is};
+      os << "part1: " << Part1{i}.solve() << ", part2: " << Part2{i}.solve(); });
 aoc::Case parse("parse", [](std::istream &is, std::ostream &) {Input{is};});
