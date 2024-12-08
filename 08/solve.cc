@@ -23,37 +23,30 @@ template <typename T> struct hash<Point<T>> {
    size_t operator() (const Point<T> &p) const noexcept { return p.row * 50 + p.col; }
 };
 }
-
 using Int = int;
 using P = Point<Int>;
 using PointSet = std::unordered_set<P>;
-
 struct Input {
    std::unordered_map<char, PointSet> points;
-   P size;
+   P size{};
    Input(std::istream &is) {
-      Int row{}, col{};
       for (std::string line; getline(is, line);) {
-         col = 0;
+         size.col = 0;
          for (char c : line) {
             if (c != '.')
-               points[c].insert({row, col});
-            ++col;
+               points[c].insert(size);
+            ++size.col;
          }
-         ++row;
+         ++size.row;
       }
-      size = { row, col };
    }
 };
-
 struct Part1 : Input {
    Part1(std::istream &is) : Input(is) { }
    Int solve() const noexcept {
       PointSet antinodes;
-      for (auto &[c, cpoints] : points) {
-         if (c == '#')
-            continue;
-         for (const P &a : cpoints) {
+      for (auto &[c, cpoints] : points)
+         for (const P &a : cpoints)
             for (const P &b : cpoints) {
                if (a == b)
                   continue;
@@ -61,20 +54,15 @@ struct Part1 : Input {
                if (anti.row >= 0 && anti.col >= 0 && anti.row < size.row && anti.col < size.col)
                   antinodes.insert(anti);
             }
-         }
-      }
       return antinodes.size();
    }
 };
-
 struct Part2 : Input {
    Part2(std::istream &is) : Input(is) {}
    Int solve() const noexcept {
       PointSet antinodes;
-      for (auto &[c, cpoints] : points) {
-         if (c == '#')
-            continue;
-         for (auto ia = cpoints.begin(); ia != cpoints.end() ; ++ia) {
+      for (auto &[c, cpoints] : points)
+         for (auto ia = cpoints.begin(); ia != cpoints.end() ; ++ia)
             for (auto ib = cpoints.begin(); ib != cpoints.end() ; ++ib) {
                if (ia == ib)
                   continue;
@@ -82,12 +70,9 @@ struct Part2 : Input {
                for (auto p = *ia; p.row < size.row && p.col < size.col && p.row >= 0 && p.col >= 0; p += diff)
                   antinodes.insert(p);
             }
-         }
-      }
       return antinodes.size();
    }
 };
-
 aoc::Case part1("part1", [](std::istream &is, std::ostream &os) {os << Part1{is}.solve();});
 aoc::Case part2("part2", [](std::istream &is, std::ostream &os) {os << Part2{is}.solve();});
 aoc::Case parse("parse", [](std::istream &is, std::ostream &) {Input{is};});
