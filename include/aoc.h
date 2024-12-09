@@ -13,10 +13,9 @@ struct Case  {
 template <typename String>
 inline std::pair<String, String> token(const String line, const std::string_view sep = " ") {
     auto split = line.find(sep);
-    if (split == std::string::npos)
-        return { line, "" };
-    else
-        return { line.substr(0, split), line.substr(split + sep.size()) };
+    return (split == std::string::npos) ?
+       std::pair{ line, "" } :
+       std::pair{ line.substr(0, split), line.substr(split + sep.size()) };
 }
 
 template <typename String, typename Value>
@@ -28,6 +27,17 @@ parsetoken(String &line, const std::string_view sep = " ") {
    auto fcr = std::from_chars( tok.data(), tok.data() + tok.size(), value );
    if (fcr.ptr == tok.data())
       throw std::logic_error("parse failed");
+   return value;
+}
+
+template <typename T> T::value_type popfront(T &container) {
+   typename T::value_type value = container.front();
+   container.pop_front();
+   return value;
+}
+template <typename T> T::value_type popback(T &container) {
+   typename T::value_type value = container.back();
+   container.pop_back();
    return value;
 }
 

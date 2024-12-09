@@ -15,9 +15,13 @@ all: solve
 solve: $(PARTOBJS) aoc-main.o timeit.o
 	$(CXX) -o $@ $^  -lboost_chrono
  
+INPUT=../data/`basename $$PWD`.txt
+
 check: all
-	./solve ../data/`basename $$PWD`.txt
+	./solve $(INPUT)
 time: all
-	./solve -t ../data/`basename $$PWD`.txt
+	./solve -t $(INPUT)
 clean:
 	rm -f *.o solve core.*
+gdb: all
+	gdb --args ./solve $(INPUT)
