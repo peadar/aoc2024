@@ -30,12 +30,12 @@ parsetoken(String &line, const std::string_view sep = " ") {
    return value;
 }
 
-template <typename T> T::value_type popfront(T &container) {
+template <typename T> typename T::value_type popfront(T &container) {
    typename T::value_type value = container.front();
    container.pop_front();
    return value;
 }
-template <typename T> T::value_type popback(T &container) {
+template <typename T> typename T::value_type popback(T &container) {
    typename T::value_type value = container.back();
    container.pop_back();
    return value;

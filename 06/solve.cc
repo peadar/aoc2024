@@ -59,7 +59,7 @@ struct Parse {
                wall.push_back(true);
                break;
             case 'v': case '<': case '^': case '>':
-               guard_start.pos = Point(walls.size(), wall.size());
+               guard_start.pos = Point{unsigned(walls.size()), unsigned(wall.size())};
                guard_start.dir = c2dir(c);
                wall.push_back(false);
                break;
