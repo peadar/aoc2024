@@ -1,13 +1,16 @@
 #include "aoc.h"
+#include <boost/container/small_vector.hpp>
 
 namespace {
 
-enum Direction { UP, RIGHT, DOWN, LEFT };
+enum Direction { UP = 1 << 0, RIGHT = 1 << 1, DOWN = 1 << 2, LEFT = 1 << 3 };
+
+using Scalar = uint8_t;
 
 struct Point {
-   unsigned row{};
-   unsigned col{};
-   Point operator + (const Point &rhs) const noexcept { return { row + rhs.row, col + rhs.col }; }
+   Scalar row{};
+   Scalar col{};
+   Point operator + (const Point &rhs) const noexcept { return { uint8_t(row + rhs.row), uint8_t(col + rhs.col) }; }
    auto operator <=> (const Point &rhs) const noexcept = default;
    bool operator == (const Point &rhs) const noexcept = default;
 };
@@ -27,13 +30,21 @@ constexpr Direction c2dir (char c) noexcept {
    }
 }
 
-constexpr Direction rotate(Direction d) noexcept { return Direction((d + 1) % 4); }
+constexpr Direction rotate(Direction d) noexcept {
+   switch (d) {
+      case UP: return RIGHT;
+      case RIGHT: return DOWN;
+      case DOWN: return LEFT;
+      case LEFT: return UP;
+      default: __builtin_unreachable();
+   }
+}
 
 constexpr Point velocity(Direction d) noexcept {
    switch (d) {
-      case UP: return {unsigned(-1), 0};
+      case UP: return {Scalar(-1), 0};
       case DOWN: return {1, 0};
-      case LEFT: return {0, unsigned(-1)};
+      case LEFT: return {0, Scalar(-1)};
       case RIGHT: return {0, 1};
       default: __builtin_unreachable();
    }
@@ -44,22 +55,24 @@ struct Guard {
    Direction dir;
 };
 
+template <typename T>
+using Vec = boost::container::small_vector<T, 60>;
+
 struct Parse {
    Guard guard_start;
-   std::vector<std::vector<char>> walls; // faster than the vector<bool> mess. Could probably do better.
+   Vec<Vec<char>> walls;
 
    Parse(std::istream &is) noexcept {
-      walls.reserve(140);
       for (std::string line; std::getline(is, line); ) {
-         std::vector<char> wall;
-         wall.reserve(140);
+         walls.emplace_back();
+         Vec<char> &wall = walls.back();
          for (char c : line) {
             switch (c) {
             case '#':
                wall.push_back(true);
                break;
             case 'v': case '<': case '^': case '>':
-               guard_start.pos = Point{unsigned(walls.size()), unsigned(wall.size())};
+               guard_start.pos = Point{Scalar(walls.size()), Scalar(wall.size())};
                guard_start.dir = c2dir(c);
                wall.push_back(false);
                break;
@@ -70,20 +83,18 @@ struct Parse {
                abort();
             }
          }
-         walls.push_back(std::move(wall));
       }
    }
    unsigned solve() { return 0; }
 
-
    // calculate if the guard escapes the configuration.
    template <typename Acceptor> bool escape_path(Acceptor acc) const noexcept {
       Guard guard = guard_start;
-      std::vector<std::vector<unsigned char>> visited;
+      Vec<Vec<unsigned char>> visited;
       visited.resize(walls.size());
       for (auto &vr : visited)
          vr.resize(walls[0].size());
-      visited[guard_start.pos.row][guard_start.pos.col] = (1 << guard.dir);
+      visited[guard_start.pos.row][guard_start.pos.col] = guard.dir;
       acc(guard_start.pos);
       for (;;) {
          auto nextpos = guard.pos + velocity(guard.dir);
@@ -95,14 +106,14 @@ struct Parse {
             continue;
          } 
          auto & visitcell = visited[nextpos.row][nextpos.col];
-         if (visitcell & (1<<guard.dir)) {
+         if (visitcell & guard.dir) {
             // Already been here, travelling in this direction. That's a loop.
             return false;
          }
          if (visitcell == 0) {
             acc( nextpos );
          }
-         visitcell |= (1 << guard.dir);
+         visitcell |= guard.dir;
          guard.pos = nextpos;
       }
       return true;
