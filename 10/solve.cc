@@ -12,10 +12,9 @@ template <typename Accumulator> struct Solve {
          if (expected == 9) {
             acc.visit(row, col);
          } else {
-            find_heads(row + 1, col, expected + 1, acc);
-            find_heads(row - 1, col, expected + 1, acc);
-            find_heads(row, col + 1, expected + 1, acc); 
-            find_heads(row, col - 1, expected + 1, acc);
+            static constexpr std::pair<int, int> dirs[] { { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 } };
+            for (const auto &[ dr, dc ] : dirs)
+               find_heads(row + dr, col + dc, expected + 1, acc);
          }
       }
    }
