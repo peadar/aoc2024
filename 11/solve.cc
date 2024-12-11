@@ -59,8 +59,8 @@ Int permute(Ints &&seq, size_t iters) noexcept {
    for (auto i: seq)
       (*in)[i]++;
    for (size_t iter = 0; iter < iters; ++iter) {
-      for (auto [ink, incount] : *in)
-         permute_one( ink, [&] (Int outk) { (*out)[outk] += incount; });
+      for (auto key_and_count : *in)
+         permute_one( key_and_count.first, [&] (Int outk) { (*out)[outk] += key_and_count.second; });
       std::swap(out, in);
       out->clear();
    }
