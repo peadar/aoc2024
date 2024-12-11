@@ -1,9 +1,9 @@
 #include "aoc.h"
+#include "lintable.h"
 namespace {
 
 using Int = unsigned long;
 using Ints = std::vector<Int>;
-using IntMap = std::unordered_map<Int, Int>;
 
 Ints parse(std::istream &in) {
    Ints sequence;
@@ -53,25 +53,36 @@ void permute_one( Int i, auto yield ) {
    }
 }
 
-Int permute(Ints &&seq, size_t iters) {
-   IntMap a, *in=&a, b, *out=&b;
+template <template <typename, typename> typename MapType>
+Int permute(Ints &&seq, size_t iters) noexcept {
+   MapType<Int, Int> a, *in = &a, b, *out = &b;
    for (auto i: seq)
       (*in)[i]++;
    for (size_t iter = 0; iter < iters; ++iter) {
-      for (auto &[ink, incount] : *in)
+      for (auto [ink, incount] : *in)
          permute_one( ink, [&] (Int outk) { (*out)[outk] += incount; });
       std::swap(out, in);
       out->clear();
    }
-   return std::accumulate( in->begin(), in->end(), 0ULL, [](Int acc, auto &k) { return acc + k.second; } );
+   return std::accumulate( in->begin(), in->end(), 0ULL, [](Int acc, auto k) { return acc + k.second; } );
+}
 }
 
-}
+template <typename K, typename V> using SystemMap = std::unordered_map<K, V>;
+template <typename K, typename V> using QuickTable = LinTable<K, V, 65537>;
 
 aoc::Case part1{ "part1", [](std::istream &is, std::ostream &os) {
-   os << permute(parse(is), 25 );
+   os << permute<SystemMap>(parse(is), 25 );
 }};
 
 aoc::Case part2{ "part2", [](std::istream &is, std::ostream &os) {
-   os << permute( parse(is), 75 );
+   os << permute<SystemMap>( parse(is), 75 );
+}};
+
+aoc::Case part1b{ "part1-better", [](std::istream &is, std::ostream &os) {
+   os << permute<QuickTable>(parse(is), 25 );
+}};
+
+aoc::Case part2b{ "part2-better", [](std::istream &is, std::ostream &os) {
+   os << permute<QuickTable>( parse(is), 75 );
 }};
