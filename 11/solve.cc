@@ -1,13 +1,10 @@
 #include "aoc.h"
 #include "lintable.h"
 namespace {
-
-using Int = unsigned long;
-using Ints = std::vector<Int>;
-
-Ints parse(std::istream &in) {
-   Ints sequence;
-   for (Int i;;) {
+template <typename T>
+auto parse(std::istream &in) {
+   std::vector<T> sequence;
+   for (T i;;) {
       in >> i;
       if (!in)
          break;
@@ -16,13 +13,15 @@ Ints parse(std::istream &in) {
    return sequence;
 };
 
-constexpr inline unsigned digit_count(Int i) noexcept {
+template <typename Int>
+constexpr unsigned digit_count(Int i) noexcept {
    unsigned result = 1;
-   for (Int compare = 10;; compare *=10, result++)
+   for (Int compare = 10;; compare *= 10, result++)
       if (compare > i)
          return result;
 }
 
+template <typename Int>
 constexpr Int pow10(unsigned count) noexcept {
    switch (count) { // this measures margiinally faster than a loop multiplying
                     // by 10 each time. Additional cases beyond 4 don't help.
@@ -33,56 +32,54 @@ constexpr Int pow10(unsigned count) noexcept {
       case 4: return 10000;
       default: {
          Int half = count / 2;
-         return pow10(half) * pow10(count - half);
+         return pow10<Int>(half) * pow10<Int>(count - half);
       }
    }
 }
 
-void permute_one( Int i, auto yield ) {
+template <typename Int>
+constexpr void stone(Int i, auto yield) noexcept {
    if (i == 0) {
       yield(1);
+   } else if (unsigned digits = digit_count(i); digits % 2 == 0) {
+      Int denom = pow10<Int>(digits / 2);
+      yield(i / denom);
+      yield(i % denom);
    } else {
-      unsigned digits = digit_count(i);
-      if (digits % 2 == 0) {
-         Int denom = pow(10, double( digits ) / 2 );
-         yield( i / denom );
-         yield( i % denom );
-      } else {
-         yield( i * 2024 );
-      }
+      yield(i * 2024);
    }
 }
 
-template <template <typename, typename> typename MapType>
-Int permute(Ints &&seq, size_t iters) noexcept {
-   MapType<Int, Int> a, *in = &a, b, *out = &b;
+template <typename Map, size_t times, typename Ints>
+constexpr Map::mapped_type blink(const Ints seq) noexcept {
+   Map a, *in = &a, b, *out = &b;
    for (auto i: seq)
       (*in)[i]++;
-   for (size_t iter = 0; iter < iters; ++iter) {
+   for (size_t iter = 0; iter < times; ++iter) {
       for (auto key_and_count : *in)
-         permute_one( key_and_count.first, [&] (Int outk) { (*out)[outk] += key_and_count.second; });
+         stone(key_and_count.first, [key_and_count, out] (Map::mapped_type outk) constexpr {
+               (*out)[outk] += key_and_count.second; });
       std::swap(out, in);
       out->clear();
    }
-   return std::accumulate( in->begin(), in->end(), 0ULL, [](Int acc, auto k) { return acc + k.second; } );
+   return std::accumulate(in->begin(), in->end(), 0ULL,
+         [](typename Map::mapped_type acc, auto k) { return acc + k.second; });
 }
+
+template <typename Map, size_t times>
+void partN(std::istream &is, std::ostream &os) {
+   os << blink<Map, times>(parse<typename Map::mapped_type>(is));
 }
 
-template <typename K, typename V> using SystemMap = std::unordered_map<K, V>;
-template <typename K, typename V> using QuickTable = LinTable<K, V, 65537>;
+using Int = unsigned long;
+using Linmap = LinTable<Int, Int, 65537>;
 
-aoc::Case part1{ "part1", [](std::istream &is, std::ostream &os) {
-   os << permute<SystemMap>(parse(is), 25 );
-}};
+aoc::Case part1{ "part1", partN<std::unordered_map<Int, Int>, 25>};
+aoc::Case part2{ "part2", partN<std::unordered_map<Int, Int>, 75>};
+aoc::Case part1b{ "part1-alt", partN<Linmap, 25>};
+aoc::Case part2b{ "part2-alt", partN<Linmap, 75>};
 
-aoc::Case part2{ "part2", [](std::istream &is, std::ostream &os) {
-   os << permute<SystemMap>( parse(is), 75 );
-}};
-
-aoc::Case part1b{ "part1-better", [](std::istream &is, std::ostream &os) {
-   os << permute<QuickTable>(parse(is), 25 );
-}};
-
-aoc::Case part2b{ "part2-better", [](std::istream &is, std::ostream &os) {
-   os << permute<QuickTable>( parse(is), 75 );
-}};
+constexpr std::array <Int, 2> const_eg { 125, 17 };
+aoc::Case part1c{ "part1-const", [](std::istream &, std::ostream &os) { os << blink<Linmap, 25>(const_eg); } };
+aoc::Case part2c{ "part2-const", [](std::istream &, std::ostream &os) { os << blink<Linmap, 75>(const_eg); } };
+}
