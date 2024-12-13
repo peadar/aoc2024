@@ -47,15 +47,13 @@ template <size_t adjust> Int solve(std::istream &is) {
 template <size_t adjust> Int WorkItem<adjust>::solve() {
    // We have two equations in two unknowns. Solve for the first variable by
    // cancelling the second.  (I'm sure some matrices and linear algebra can do
-   // thise way better - this is me tracing what I did on paper.
-   Int tmp = eqns[0].b;
+   // these way better - this is me tracing what I did on paper.
    Eqn tmpeqn = eqns[0];
    for (auto &i : eqns[0].vals)
       i *= eqns[1].b;
    for (auto &i : eqns[1].vals)
-      i *= tmp;
-   assert(eqns[0].b == eqns[1].b);
-   Int c = eqns[0].c  - eqns[1].c;
+      i *= tmpeqn.b;
+   Int c = eqns[0].c - eqns[1].c;
    Int a = eqns[0].a - eqns[1].a;
    if (c % a != 0)
       return 0;
@@ -63,8 +61,7 @@ template <size_t adjust> Int WorkItem<adjust>::solve() {
    Int btimes = tmpeqn.c - tmpeqn.a * atimes;
    if (btimes % tmpeqn.b != 0)
       return 0;
-   btimes /= tmpeqn.b;
-   return atimes * 3 + btimes;
+   return atimes * 3 + btimes / tmpeqn.b;
 }
 
 aoc::Case part1{ "part1", [](std::istream &is, std::ostream &os) { os << solve<0>(is); }};
