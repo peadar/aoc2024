@@ -18,7 +18,17 @@ inline std::pair<String, String> token(const String line, const std::string_view
        std::pair{ line.substr(0, split), line.substr(split + sep.size()) };
 }
 
-template <typename String, typename Value>
+struct Ignore{};
+
+}
+namespace std {
+inline std::from_chars_result from_chars(const char *, const char *e, aoc::Ignore &) {
+   return std::from_chars_result{e, std::errc{}};
+}
+}
+namespace aoc {
+
+template <typename Value, typename String >
 Value
 parsetoken(String &line, const std::string_view sep = " ") {
    String tok;
