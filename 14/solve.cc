@@ -7,12 +7,9 @@ struct Point {
    Int x{}, y{};
    Point operator + (const Point &rhs) const noexcept { return { x + rhs.x, y + rhs.y }; }
 };
+struct Robot { Point location, velocity; };
 constexpr Int XSIZE = 101;
 constexpr Int YSIZE = 103;
-
-struct Robot {
-   Point location, velocity;
-};
 
 std::istream &operator>>(std::istream &is, Robot &robot) {
    std::string line;
@@ -54,31 +51,28 @@ void part1(std::istream &is, std::ostream &os) {
    auto q  = quads(robots, 100);
    os << std::accumulate(q.begin(), q.end(), 1UL, std::multiplies{});
 }
-aoc::Case case1{ "part1", part1 };
 
-void display(std::ostream &os, const std::vector<Robot> &robots, int iters, unsigned quad) {
-   unsigned pic[XSIZE][YSIZE] {};
-   for (const auto &r : robots) {
-      auto p = move_robot(r, iters);
-      ++pic[p.x][p.y];
-   }
-   for (size_t y = 0; y < YSIZE/2; ++y) {
-      for (size_t x = 0; x < XSIZE/2; ++x) {
-         const char elts[] = " 123456789X";
-         auto count = pic[x + XSIZE/2 *(quad % 2)][y + YSIZE/2 * (quad / 2)];
-         os.rdbuf()->sputc(count < sizeof elts  ? elts[count] : 'X');
+void display(std::ostream &os, const std::array<std::array<unsigned, XSIZE>, YSIZE> &pic) {
+   for (int y = 0; y < YSIZE - 3; y += 4) {
+      for (int x = 0; x < XSIZE - 3; x += 1) {
+         unsigned braille = 0;
+         braille |= bool(pic[y][x] ? 1 : 0) << 0;
+         braille |= bool(pic[y+1][x] ? 1 : 0) << 1;
+         braille |= bool(pic[y+2][x] ? 1 : 0) << 2;
+         braille |= bool(pic[y][x+1] ? 1 : 0) << 3;
+         braille |= bool(pic[y+1][x+1] ? 1 : 0) << 4;
+         braille |= bool(pic[y+2][x+1] ? 1 : 0) << 5;
+         braille |= bool(pic[y+3][x] ? 1 : 0) << 6;
+         braille |= bool(pic[y+3][x+1] ? 1 : 0) << 7;
+         os << aoc::Utf8( braille | 0x2800 );
       }
-      os.rdbuf()->sputc('\n');
+      os << "\n";
    }
-   os << iters << "\n";
 }
 
-void part2(std::istream &is, std::ostream &os) {
-   std::vector<Robot> robots;
-   std::copy(std::istream_iterator<Robot>(is), std::istream_iterator<Robot>(), std::back_inserter(robots));
+unsigned tree(const std::vector<Robot> &robots) {
    unsigned best_guess_score = 0;
    unsigned best_guess = 0;
-   unsigned best_quad = 0;
    for (unsigned i = 0; i < XSIZE * YSIZE; ++i) {
       unsigned low = std::numeric_limits<unsigned>::max();
       unsigned high = 0;
@@ -91,10 +85,44 @@ void part2(std::istream &is, std::ostream &os) {
       if (score > best_guess_score) {
          best_guess_score = score;
          best_guess = i;
-         best_quad = std::max_element(qs.begin(), qs.end()) - qs.begin();
       }
    }
-   display(os, robots, best_guess, best_quad );
+   return best_guess;
 }
+
+void part2(std::istream &is, std::ostream &os) {
+   std::vector<Robot> robots;
+   std::copy(std::istream_iterator<Robot>(is), std::istream_iterator<Robot>(), std::back_inserter(robots));
+   os << tree( robots );
+}
+
+void animate(std::istream &is, std::ostream &os) {
+   os << "\n";
+   std::vector<Robot> robots;
+   std::copy(std::istream_iterator<Robot>(is), std::istream_iterator<Robot>(), std::back_inserter(robots));
+   int target = tree(robots);
+   auto framerate = std::chrono::nanoseconds(16'666'667); // That's 1/60th sec.
+   auto until = std::chrono::high_resolution_clock::now() + framerate;
+   for (size_t iteration = 0; iteration < robots.size(); ++iteration) {
+      std::array<std::array<unsigned, XSIZE>, YSIZE> pic{};
+      unsigned robotnum = 0;
+      for (const auto &r : robots) {
+         auto p = move_robot(r, robotnum <= iteration ? target : 0 );
+         ++pic[p.y][p.x];
+         ++robotnum;
+      }
+      std::cout << "\033[H\033[2J\033[3J";
+      display(os, pic);
+      std::cout.flush();
+      auto now = std::chrono::high_resolution_clock::now();
+      if (now < until) {
+         std::this_thread::sleep_for(until - now);
+      }
+      until += framerate;
+   }
+}
+
+aoc::Case case3{ "animate", animate };
+aoc::Case case1{ "part1", part1 };
 aoc::Case case2{ "part2", part2 };
 }

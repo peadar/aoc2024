@@ -49,6 +49,8 @@ std::vector<char> bufferis(std::istream &is) {
 }
 
 int main(int argc, char *argv[]) {
+   std::locale::global(std::locale(""));
+   std::wcout.imbue(std::locale(""));
    bool do_timeit { false };
    std::set<std::string> parts;
    bool quiet { false };

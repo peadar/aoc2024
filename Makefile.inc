@@ -12,7 +12,7 @@ all: solve
 %.s: %.cc
 	$(CXX) $(ASFLAGS) -S -o $@ $^
 
-solve: $(PARTOBJS) aoc-main.o timeit.o
+solve: $(PARTOBJS) aoc-main.o timeit.o unicode.o
 	$(CXX) -o $@ $^  -lboost_chrono
  
 INPUT=../data/`basename $$PWD`.txt

@@ -51,4 +51,10 @@ template <typename T> typename T::value_type popback(T &container) {
    return value;
 }
 
+struct Utf8 {
+   uint32_t value;
+};
+
+std::ostream &operator << (std::ostream &os, Utf8 cp);
+
 }
