@@ -35,7 +35,7 @@ parsetoken(String &line, const std::string_view sep = " ") {
    std::tie(tok, line) = token(line, sep);
    Value value{};
    auto fcr = std::from_chars( tok.data(), tok.data() + tok.size(), value );
-   if (fcr.ptr == tok.data())
+   if (fcr.ec != std::errc{})
       throw std::logic_error("parse failed");
    return value;
 }
