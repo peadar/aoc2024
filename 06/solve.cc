@@ -63,9 +63,11 @@ struct Parse {
    Vec<Vec<char>> walls;
 
    Parse(std::istream &is) noexcept {
+      walls.reserve(130);
       for (std::string line; std::getline(is, line); ) {
          walls.emplace_back();
          Vec<char> &wall = walls.back();
+         wall.reserve(131);
          for (char c : line) {
             switch (c) {
             case '#':

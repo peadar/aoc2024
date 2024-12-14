@@ -54,16 +54,18 @@ void part1(std::istream &is, std::ostream &os) {
 
 void display(std::ostream &os, const std::array<std::array<unsigned, XSIZE>, YSIZE> &pic) {
    for (int y = 0; y < YSIZE - 3; y += 4) {
-      for (int x = 0; x < XSIZE - 3; x += 1) {
+      for (int x = 0; x < XSIZE - 3; x += 2) {
          unsigned braille = 0;
-         braille |= bool(pic[y][x] ? 1 : 0) << 0;
-         braille |= bool(pic[y+1][x] ? 1 : 0) << 1;
-         braille |= bool(pic[y+2][x] ? 1 : 0) << 2;
-         braille |= bool(pic[y][x+1] ? 1 : 0) << 3;
-         braille |= bool(pic[y+1][x+1] ? 1 : 0) << 4;
-         braille |= bool(pic[y+2][x+1] ? 1 : 0) << 5;
-         braille |= bool(pic[y+3][x] ? 1 : 0) << 6;
-         braille |= bool(pic[y+3][x+1] ? 1 : 0) << 7;
+         braille |= (pic[y][x] ? 1 : 0)  << 0;
+         braille |= (pic[y+1][x] ? 1 : 0)  << 1;
+         braille |= (pic[y+2][x] ? 1 : 0)  << 2;
+
+         braille |= (pic[y][x+1] ? 1 : 0)  << 3;
+         braille |= (pic[y+1][x+1] ? 1 : 0) << 4;
+         braille |= (pic[y+2][x+1] ? 1 : 0)  << 5;
+
+         braille |= (pic[y+3][x] ? 1 : 0) << 6;
+         braille |= (pic[y+3][x+1] ? 1 : 0) << 7;
          os << aoc::Utf8( braille | 0x2800 );
       }
       os << "\n";
@@ -102,7 +104,7 @@ void animate(std::istream &is, std::ostream &os) {
    std::copy(std::istream_iterator<Robot>(is), std::istream_iterator<Robot>(), std::back_inserter(robots));
    int target = tree(robots);
    auto framerate = std::chrono::nanoseconds(16'666'667); // That's 1/60th sec.
-   auto until = std::chrono::high_resolution_clock::now() + framerate;
+   auto until = std::chrono::high_resolution_clock::now();
    for (size_t iteration = 0; iteration < robots.size(); ++iteration) {
       std::array<std::array<unsigned, XSIZE>, YSIZE> pic{};
       unsigned robotnum = 0;
@@ -114,12 +116,23 @@ void animate(std::istream &is, std::ostream &os) {
       std::cout << "\033[H\033[2J\033[3J";
       display(os, pic);
       std::cout.flush();
-      auto now = std::chrono::high_resolution_clock::now();
-      if (now < until) {
-         std::this_thread::sleep_for(until - now);
-      }
+
       until += framerate;
+      std::this_thread::sleep_until(until);
    }
+}
+
+void testchart(std::istream &is, std::ostream &os) {
+   std::cout << "\n";
+   std::array<std::array<unsigned, XSIZE>, YSIZE> pic{};
+   for (int x = 0; x < XSIZE; x += 2) {
+      for (int y = 0; y < YSIZE; y += 1) {
+         pic[x][y] = 1;
+         pic[x+1][y] = 0;
+      }
+   }
+   display(os, pic);
+   std::cout.flush();
 }
 
 aoc::Case case3{ "animate", animate };
