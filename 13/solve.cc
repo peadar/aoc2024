@@ -17,7 +17,6 @@ template <size_t adjust> std::istream &operator >> (std::istream &is, WorkItem<a
       return is;
    }
    std::string line;
-   std::string_view tok;
    std::string_view rest;
    for (int i = 0; i < 2; ++i) {
       std::getline(is, line);
