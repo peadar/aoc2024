@@ -40,22 +40,14 @@ struct Part {
          map.emplace_back();
          Vec<char> &row = map.back();
          for (char c : line) {
-            switch (c) {
-               case '@':
-                  robot = Point{Scalar(map.size() - 1), Scalar(row.size())};
-                  [[fallthrough]];
-               default:
-                  put(c, row);
-                  break;
-            }
+            if (c == '@')
+               robot = Point{Scalar(map.size() - 1), Scalar(row.size())};
+            put(c, row);
          }
       }
-      for (int c; (c = is.rdbuf()->sbumpc()) != EOF; ) {
-         switch (c) {
-            case '\n': break;
-            default: path.push_back(Direction(c)); break;
-         }
-      }
+      for (int c; (c = is.rdbuf()->sbumpc()) != EOF; )
+         if (c != '\n')
+            path.push_back(Direction(c));
    }
 
    char &at(Point p) { return map[p.row][p.col]; }
