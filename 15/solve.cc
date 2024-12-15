@@ -79,7 +79,7 @@ struct Parse {
 };
 
 struct Part1 : Parse {
-   Part1( std::istream &is) : Parse{ is } {}
+   Part1(std::istream &is) : Parse{ is } {}
    bool move(Point p, Direction d) {
       Point next = p + velocity(d);
       char &c = at(next);
@@ -123,17 +123,16 @@ struct Part2 : Parse {
 
    Part2(std::istream &is) : Parse{ is, put }{ }
 
-   template <bool test> bool move_lr(Point p, Direction d) {
+   bool move_lr(Point p, Direction d) {
       auto v = velocity(d);
       char &c = at(p + v);
       switch (c) {
          case ']': case '[':
-            if (!move_lr<test>(p+v, d))
+            if (!move_lr(p+v, d))
                return false;
             [[fallthrough]];
          case '.':
-            if constexpr (!test)
-               std::swap(at(p+v), at(p));
+            std::swap(at(p+v), at(p));
             return true;
          case '#':
             return false;
@@ -171,7 +170,7 @@ move:
    template <bool test = true> bool move(Point p, Direction d) {
       switch (d) {
          case LEFT: case RIGHT:
-            return move_lr<false>(p, d);
+            return move_lr(p, d);
          case UP: case DOWN:
             if (move_ud<true>(p, d)) {
                move_ud<false>(p, d);
