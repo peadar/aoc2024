@@ -123,24 +123,6 @@ struct Part2 : Parse {
 
    Part2(std::istream &is) : Parse{ is, put }{ }
 
-   bool move_one(Point p, Direction d) {
-      Point next = p + velocity(d);
-      char &c = at(next);
-      switch (c) {
-         case '#':
-            return false;
-         case 'O': case '@':
-            if (!move_one(next, d))
-               return false;
-            [[fallthrough]];
-         case '.':
-            std::swap(c, at(p));
-            return true;
-         default:
-            abort();
-      }
-   }
-
    template <bool test> bool move_lr(Point p, Direction d) {
       auto v = velocity(d);
       char &c = at(p + v);
