@@ -33,6 +33,8 @@ struct Parse {
    Vec<Row> map;
    Vec<Direction> path;
 
+   Parse(std::istream &is) : Parse{ is, [](const char c, Row &row) { row.push_back(c); } } {}
+
    template <typename Put> Parse(std::istream &is, Put &&put) noexcept {
       for (std::string line; std::getline(is, line) && line != ""; ) {
          map.emplace_back();
@@ -77,7 +79,7 @@ struct Parse {
 };
 
 struct Part1 : Parse {
-   Part1( std::istream &is) : Parse{ is, [](const char c, Row &row) { row.push_back(c); }}{}
+   Part1( std::istream &is) : Parse{ is } {}
    bool move(Point p, Direction d) {
       Point next = p + velocity(d);
       char &c = at(next);
@@ -98,7 +100,6 @@ struct Part1 : Parse {
 };
 
 struct Part2 : Parse {
-
    static void put(char c, Row &r) {
       switch (c) {
          case '#':
@@ -196,11 +197,12 @@ move:
             }
             return false;
          default:
-            abort();
+            __builtin_unreachable();
       }
    }
 };
 
 aoc::Case part1{"part1", [](std::istream &is, std::ostream &os) {os << Part1(is).solve<'O', Part1>(os); } };
 aoc::Case part2{"part2", [](std::istream &is, std::ostream &os) {os << Part2(is).solve<'[', Part2>(os); } };
+aoc::Case parse{"parse-only", [](std::istream &is, std::ostream &) { Parse{is}; } };
 }
