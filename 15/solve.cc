@@ -27,15 +27,15 @@ constexpr Point velocity(Direction d) noexcept {
 
 template <typename T> using Vec = boost::container::small_vector<T, 60>;
 
-struct Parse {
+struct Part {
    Point robot;
    using Row = Vec<char>;
    Vec<Row> map;
    Vec<Direction> path;
 
-   Parse(std::istream &is) : Parse{ is, [](const char c, Row &row) { row.push_back(c); } } {}
+   Part(std::istream &is) : Part{ is, [](const char c, Row &row) { row.push_back(c); } } {}
 
-   template <typename Put> Parse(std::istream &is, Put &&put) noexcept {
+   template <typename Put> Part(std::istream &is, Put &&put) noexcept {
       for (std::string line; std::getline(is, line) && line != ""; ) {
          map.emplace_back();
          Vec<char> &row = map.back();
@@ -70,16 +70,16 @@ struct Parse {
       return total;
    }
 
-   template <char c, typename Part> unsigned solve(std::ostream &) noexcept {
+   template <char c, typename RealPart> unsigned solve(std::ostream &) noexcept {
       for (Direction d : path)
-         if (static_cast<Part*>(this)->move(robot, d))
+         if (static_cast<RealPart*>(this)->move(robot, d))
             robot += velocity(d);
       return score<c>();
    }
 };
 
-struct Part1 : Parse {
-   Part1(std::istream &is) : Parse{ is } {}
+struct Part1 : Part {
+   Part1(std::istream &is) : Part{ is } {}
    bool move(Point p, Direction d) {
       Point next = p + velocity(d);
       char &c = at(next);
@@ -99,7 +99,7 @@ struct Part1 : Parse {
    }
 };
 
-struct Part2 : Parse {
+struct Part2 : Part {
    static void put(char c, Row &r) {
       switch (c) {
          case '#':
@@ -121,7 +121,7 @@ struct Part2 : Parse {
       }
    }
 
-   Part2(std::istream &is) : Parse{ is, put }{ }
+   Part2(std::istream &is) : Part{ is, put }{ }
 
    bool move_lr(Point p, Direction d) {
       auto v = velocity(d);
@@ -141,17 +141,17 @@ struct Part2 : Parse {
       }
    }
 
-   template<bool test> bool move_ud(Point p, Direction d) {
+   template<bool trial_run> bool move_ud(Point p, Direction d) {
       auto v = velocity(d);
       auto next = p + v;
       char &c = at(next);
       switch (c) {
          case ']':
-            if (move_ud<test>(next, d) && move_ud<test>(next + velocity(LEFT), d))
+            if (move_ud<trial_run>(next, d) && move_ud<trial_run>(next + velocity(LEFT), d))
                goto move;
             return false;
          case '[':
-            if (move_ud<test>(next, d) && move_ud<test>(next + velocity(RIGHT), d))
+            if (move_ud<trial_run>(next, d) && move_ud<trial_run>(next + velocity(RIGHT), d))
                goto move;
             return false;
          case '#':
@@ -162,28 +162,21 @@ struct Part2 : Parse {
             abort();
       }
 move:
-      if constexpr (!test)
+      if constexpr (!trial_run)
          std::swap(at(next), at(p));
       return true;
    }
 
-   template <bool test = true> bool move(Point p, Direction d) {
+   bool move(Point p, Direction d) {
       switch (d) {
-         case LEFT: case RIGHT:
-            return move_lr(p, d);
-         case UP: case DOWN:
-            if (move_ud<true>(p, d)) {
-               move_ud<false>(p, d);
-               return true;
-            }
-            return false;
-         default:
-            __builtin_unreachable();
+         case LEFT: case RIGHT: return move_lr(p, d);
+         case UP: case DOWN: return move_ud<true>(p, d) && move_ud<false>(p, d);
+         default: __builtin_unreachable();
       }
    }
 };
 
 aoc::Case part1{"part1", [](std::istream &is, std::ostream &os) {os << Part1(is).solve<'O', Part1>(os); } };
 aoc::Case part2{"part2", [](std::istream &is, std::ostream &os) {os << Part2(is).solve<'[', Part2>(os); } };
-aoc::Case parse{"parse-only", [](std::istream &is, std::ostream &) { Parse{is}; } };
+aoc::Case parse{"parse-only", [](std::istream &is, std::ostream &) { Part{is}; } };
 }
