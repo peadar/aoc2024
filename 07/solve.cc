@@ -4,9 +4,9 @@ struct Eqn {
    Int total;
    std::vector<Int> terms;
    Eqn(std::string_view sv) {
-      total = aoc::parsetoken<std::string_view, Int>(sv, ": ");
+      total = aoc::parsetoken<Int>(sv, ": ");
       while (sv.size() != 0)
-         terms.push_back(aoc::parsetoken<std::string_view, Int>(sv));
+         terms.push_back(aoc::parsetoken<Int>(sv));
    }
    template <typename T> bool is_solvable(Int accum, auto iter) const noexcept {
       return iter == terms.end() ? accum == total : T::template is_solvable<T>(*this, accum, iter);

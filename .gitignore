@@ -1,5 +1,6 @@
 data
 target
 **/*.o
+*/solve
 **/perf.data*
 **/.ycm_extra_conf.py
