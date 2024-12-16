@@ -35,7 +35,7 @@ struct Part {
          auto &row = map.back();
          for (char c : line) {
             if (c == '@')
-               robot = Point{Scalar(map.size() - 1), Scalar(row.size())};
+               robot = {Scalar(map.size() - 1), Scalar(row.size())};
             put(c, row);
          }
       }
@@ -51,7 +51,7 @@ struct Part {
       unsigned total = 0;
       for (Scalar row = 0; row < map.size(); ++row)
          for (Scalar col = 0; col < map[row].size(); ++col)
-            if (at(Point{row, col}) == c)
+            if (at({row, col}) == c)
                total += unsigned(row) * 100 + col;
       return total;
    }
@@ -75,13 +75,13 @@ struct Part1 : Part {
          case 'O': case '@':
             if (!move(next, d))
                return false;
-            [[fallthrough]];
+            break;
          case '.':
-            std::swap(c, at(p));
-            return true;
          default:
-            abort();
+            break;
       }
+      std::swap(c, at(p));
+      return true;
    }
 };
 aoc::Case part1{"part1", [](std::istream &is, std::ostream &os) {os << Part1(is).solve<'O', Part1>(os); } };
@@ -102,6 +102,7 @@ struct Part2 : Part {
             r.push_back('.');
             break;
          case '.':
+         default:
             r.push_back('.');
             r.push_back('.');
             break;
@@ -111,19 +112,20 @@ struct Part2 : Part {
    Part2(std::istream &is) : Part{ is, put }{ }
 
    bool move_lr(Point p, Direction d) {
-      auto v = velocity(d);
-      char &c = at(p + v);
+      Point next = p + velocity(d);
+      char &c = at(next);
       switch (c) {
          case ']': case '[':
-            if (!move_lr(p+v, d))
+            if (!move_lr(next, d))
                return false;
-            [[fallthrough]];
+            break;
          case '.':
-            std::swap(at(p+v), at(p));
-            return true;
+            break;
          case '#': default:
             return false;
       }
+      std::swap(c, at(p));
+      return true;
    }
 
    template<bool trial_run> bool move_ud(Point p, Direction d) {
@@ -133,19 +135,18 @@ struct Part2 : Part {
          case ']':
             if (!move_ud<trial_run>(next, d) || !move_ud<trial_run>(next + velocity(LEFT), d))
                return false;
-            goto move;
+            break;
          case '[':
             if (!move_ud<trial_run>(next, d) || !move_ud<trial_run>(next + velocity(RIGHT), d))
                return false;
-            [[fallthrough]];
          case '.':
-move:
-            if constexpr (!trial_run)
-               std::swap(c, at(p));
-            return true;
+            break;
          case '#': default:
             return false;
       }
+      if constexpr (!trial_run)
+         std::swap(c, at(p));
+      return true;
    }
 
    bool move(Point p, Direction d) {
