@@ -19,6 +19,7 @@ struct Point {
 struct Cell {
    char c; // can kill this when done debugging.
    unsigned wall:1;
+   std::bitset<4> visited;
    Int costs[4] = { MAX, MAX, MAX, MAX };
    Cell(char c) : c(c), wall(c == '#') {}
 };
@@ -36,6 +37,7 @@ constexpr Direction rotate(Direction d) noexcept {
    return Direction((d + 1) % 4);
 }
 
+[[maybe_unused]]
 std::ostream & operator << (std::ostream &os, Direction d) {
    switch (d) {
       case NORTH: return os << "NORTH";
@@ -68,12 +70,12 @@ struct Part {
          auto head = Q.begin();
          auto item = *head;
          Q.erase(head);
-         at(item.pos).costs[item.d] = item.cost; // we now have the shortest path to this item.
-         std::cout << "cost to row=" << item.pos.row << ", col=" << item.pos.col << " in direction " << item.d << " is " << item.cost <<"\n";
+         at(item.pos).visited[item.d] = true; // we now have the shortest path to this item.
+         //std::cout << "cost to row=" << item.pos.row << ", col=" << item.pos.col << " in direction " << item.d << " is " << item.cost <<"\n";
 
          auto try_add = [&](Point p, Direction d, Int c) {
             auto &cell = at(p);
-            if (!cell.wall && cell.costs[d] == MAX) {
+            if (!cell.wall && !cell.visited[d]  && cell.costs[d] > c) {
                Q.insert({.cost=c, .d=d, .pos=p });
             }
          };
@@ -85,7 +87,7 @@ struct Part {
          d = rotate(d);
          try_add(item.pos, d, item.cost + 2000);
          d = rotate(d);
-         try_add(item.pos, d, item.cost + 2000);
+         try_add(item.pos, d, item.cost + 1000);
          assert(!Q.empty());
       }
       return Q.begin()->cost;
@@ -115,7 +117,7 @@ struct Part {
 
 struct Part1 : Part {
    Part1(std::istream &is) noexcept : Part(is) { }
-   Int solve(std::ostream &os) {
+   Int solve(std::ostream &) {
       return dijkstra();
    }
 };
