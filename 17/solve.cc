@@ -33,16 +33,15 @@ struct CPU {
       }
    }
 
-   template <typename Out> void run(std::vector<WORD> &program, Out output) {
+   template <typename Out> void run(const std::vector<WORD> &program, Out output) noexcept {
       while (PC != program.size()) {
-         Opcode opcode = Opcode(program[PC++]);
+         auto opcode = Opcode(program[PC++]);
          WORD arg = program[PC++];
          switch (opcode) {
-            case adv:
-               A = A / (1 << comboval(arg));
+            case adv: A >>=  comboval(arg);
                break;
             case bxl:
-               B = B ^ arg;
+               B ^= arg;
                break;
             case bst:
                B = comboval(arg) % 8;
@@ -52,7 +51,7 @@ struct CPU {
                   PC = arg;
                break;
             case bxc:
-               B = B ^ C;
+               B ^= C;
                break;
             case out:
                output(comboval(arg) % 8);
