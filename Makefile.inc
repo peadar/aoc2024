@@ -1,6 +1,7 @@
 OPT ?= -O0 -pipe
-CXXFLAGS += -g --std=c++2a -Wall -Wextra $(OPT) -I../include
-ASFLAGS += -g --std=c++2a -Wall -Wextra $(OPT) -I../include
+CXXSTD ?= c++2a
+CXXFLAGS += -g --std=$(CXXSTD) -Wall -Wextra $(OPT) -I../include
+ASFLAGS += -g --std=$(CXXSTD) -Wall -Wextra $(OPT) -I../include
 
 .PHONY: all clean
 VPATH = ../lib
