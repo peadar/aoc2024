@@ -7,19 +7,11 @@ constexpr Cost MAXCOST = std::numeric_limits<Cost>::max();
 static constexpr Scalar MAXROWS = 71;
 static constexpr Scalar MAXCOLS = 71;
 
-#if 0
-using Point = std::complex<Scalar>;
-constexpr Scalar row(const Point &p) noexcept { return p.imag(); }
-constexpr Scalar col(const Point &p) noexcept { return p.real(); }
-constexpr unsigned key(Point p) noexcept { return p.imag() * MAXCOLS + p.real(); }
-constexpr Point make_point(Scalar row, Scalar col) noexcept { return { col, row }; }
-#else
 using Point = unsigned;
 constexpr Scalar row(Point p) noexcept { return p / MAXCOLS; }
 constexpr Scalar col(Point p) noexcept { return p % MAXCOLS; }
 constexpr unsigned key(Point p) noexcept { return p; }
 constexpr Point make_point(Scalar row, Scalar col) noexcept { return row * MAXCOLS + col; }
-#endif
 
 struct Cell { Cost cost{MAXCOST}; };
 using Map = std::array<Cell, MAXCOLS * MAXROWS>;
