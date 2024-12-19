@@ -22,8 +22,13 @@ struct Ignore{};
 
 }
 namespace std {
-inline std::from_chars_result from_chars(const char *, const char *e, aoc::Ignore &) {
-   return std::from_chars_result{e, std::errc{}};
+inline from_chars_result from_chars(const char *, const char *e, aoc::Ignore &) {
+   return from_chars_result{e, std::errc{}};
+}
+
+inline from_chars_result from_chars(const char *p, const char *e, std::string_view &sv) {
+   sv = { p, size_t(e - p) };
+   return from_chars_result{e, std::errc{}};
 }
 }
 namespace aoc {
