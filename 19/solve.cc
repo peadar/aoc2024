@@ -1,29 +1,38 @@
+#include <boost/container/small_vector.hpp>
 #include "aoc.h"
 #include "lintable.h"
 namespace {
 
-unsigned trie_idx( char c) {
+// We store the arcs of our trie as indexes into a vector, and we only have 5
+// potential keys, so we can use an array with an entry for each possible arc.
+// Using indexes everywhere instead of pointers makes it possible to avoid
+// dynamically allocating nodes. There are no branches back to the root node,
+// so 0 is a useable sentinel for "no entry"
+//
+inline unsigned trie_idx( char c) {
    switch (c) {
       case 'r': return 0;
       case 'g': return 1;
       case 'u': return 2;
       case 'b': return 3;
       case 'w': return 4;
-      default: abort();
+      default: __builtin_unreachable();
    }
 }
 
-struct TrieNode;
-struct NodePtr : std::unique_ptr<TrieNode> { inline NodePtr(); };
+template <typename T, size_t S>
+//using Vec = std::vector<T>; // boost::container::small_vector<T, S>;
+using Vec = boost::container::small_vector<T, S>;
+
+// Each node in the trie is a set of arcs out of the trie (some with zero), and
+// a flag to say if the node represents a terminal token
 struct TrieNode {
    bool istok{false};
-   std::array<unsigned, 5> arcs{};
+   std::array<unsigned short, 5> arcs{};
 };
 
-NodePtr::NodePtr() : std::unique_ptr<TrieNode>(new TrieNode) {}
-
 struct Trie {
-   std::vector<TrieNode>  nodes;
+   std::vector<TrieNode> nodes; // all arcs and node indexes are relative to the base of this vector
    Trie() {
       nodes.reserve(2048);
    }
@@ -57,20 +66,21 @@ struct Input {
    }
 };
 
-unsigned long solve_pattern(const Trie &flags, std::string_view remaining_pattern) {
-   using Paths = LinTable<unsigned, unsigned long long, 32>;
-   Paths a, b, *in = &a, *out = &b;
-   (*in)[0] = 1;
+inline unsigned long solve_pattern(const Trie &flags, std::string_view remaining_pattern) {
+   // You can replace LinTable with std::unordered_map, but it requires dynamic allocation.
+   using Pvec = Vec<std::pair<unsigned, unsigned long>, 10>;
+   Pvec a, b, *in = &a, *out = &b;
+   in->emplace_back(0, 1);
    for (char c : remaining_pattern) {
-      for (const auto [ node, count ] : *in ) {
-         unsigned nexti = flags.nodes[node].arcs[trie_idx(c)];
-         if (nexti != 0) {
-            auto &next = flags.nodes[nexti];
-            (*out)[nexti]+=count;
-            if (next.istok)
-               (*out)[0]+=count;
+      unsigned long new_roots = 0;
+      for (const auto &[index, count]: *in ) {
+         if (unsigned nexti = flags.nodes[index].arcs[trie_idx(c)]; nexti != 0) {
+            out->emplace_back(nexti, count);
+            if (flags.nodes[nexti].istok)
+               new_roots += count;
          }
       }
+      out->emplace_back(0, new_roots);
       std::swap(in, out);
       out->clear();
    }
