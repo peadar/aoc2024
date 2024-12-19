@@ -1,20 +1,42 @@
 #include "aoc.h"
 namespace {
+unsigned trie_idx( char c) {
+   switch (c) {
+      case 'r': return 0;
+      case 'g': return 1;
+      case 'u': return 2;
+      case 'b': return 3;
+      case 'w': return 4;
+      default: abort();
+   }
+}
+
 struct TrieNode;
 struct NodePtr : std::unique_ptr<TrieNode> { inline NodePtr(); };
 struct TrieNode {
-   std::unordered_map<char, NodePtr> arcs;
    bool istok{false};
+   std::array<unsigned, 5> arcs{};
 };
 NodePtr::NodePtr() : std::unique_ptr<TrieNode>(new TrieNode) {}
 
 struct Trie {
-   TrieNode root;
+   std::vector<TrieNode>  nodes;
+   Trie() {
+      nodes.reserve(2048);
+   }
    void insert(std::string_view sv) noexcept {
-      TrieNode *cur = &root;
-      for (char c : sv)
-         cur = cur->arcs[c].get();
-      cur->istok = true;
+      nodes.emplace_back(); // the root node.
+      unsigned cur = 0;
+      for (char c : sv) {
+         unsigned next = nodes[cur].arcs[trie_idx(c)];
+         if (next == 0) {
+            next = nodes.size();
+            nodes.emplace_back();
+            nodes[cur].arcs[trie_idx(c)] = next;
+         }
+         cur = next;
+      }
+      nodes[cur].istok = true;
    }
 };
 
@@ -33,24 +55,24 @@ struct Input {
 };
 
 unsigned long solve_pattern(const Trie &flags, std::string_view remaining_pattern) {
-   using Paths = std::unordered_map<const TrieNode *, unsigned long long>;
+   using Paths = std::unordered_map<unsigned, unsigned long long>;
    Paths in;
-   in[&flags.root] = 1;
+   in[0] = 1;
    for (char c : remaining_pattern) {
       Paths out;
       for (const auto [ node, count ] : in ) {
-         auto nexti = node->arcs.find(c);
-         if (nexti != node->arcs.end()) {
-            auto next = nexti->second.get();
-            out[next]+=count;
-            if (next->istok)
-               out[&flags.root]+=count;
+         unsigned nexti = flags.nodes[node].arcs[trie_idx(c)];
+         if (nexti != 0) {
+            auto &next = flags.nodes[nexti];
+            out[nexti]+=count;
+            if (next.istok)
+               out[0]+=count;
          }
       }
       in = std::move(out);
    }
-   return std::accumulate(in.begin(), in.end(), 0ULL, [](unsigned long acc, auto item) {
-         return item.first->istok ? acc + item.second : acc; });
+   return std::accumulate(in.begin(), in.end(), 0ULL, [&](unsigned long acc, auto item) {
+         return flags.nodes[item.first].istok ? acc + item.second : acc; });
 }
 
 void part1(std::istream &in, std::ostream &out) {
