@@ -1,6 +1,5 @@
 #include <boost/container/small_vector.hpp>
 #include "aoc.h"
-#include "lintable.h"
 namespace {
 
 // We store the arcs of our trie as indexes into a vector, and we only have 5
