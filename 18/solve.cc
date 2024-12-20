@@ -21,15 +21,15 @@ struct MemorySpace {
    Map weights;
    std::vector<Point> walls;
 
-   static constexpr Point s { make_point(0,0) };
-   static constexpr Point e { make_point( MAXROWS-1, MAXCOLS-1) };
+   static constexpr Point START { make_point(0,0) };
+   static constexpr Point END { make_point( MAXROWS-1, MAXCOLS-1) };
 
    Cost bfs(Cost maxage) {
       Map map { weights };
       std::deque<Point> Q;
-      at(map, make_point(0,0)).cost = 0;
-      Q.push_back(make_point(0,0));
-      while (*Q.begin() != e) {
+      at(map, START).cost = 0;
+      Q.push_back(START);
+      while (*Q.begin() != END) {
          auto from = Q.front();
          Q.pop_front();
          auto try_add = [&](const Point &to, Cost c) {
