@@ -67,7 +67,21 @@ struct Input {
 };
 
 inline unsigned long solve_pattern(const Trie &flags, std::string_view remaining_pattern) {
-   // You can replace LinTable with std::unordered_map, but it requires dynamic allocation.
+   /*
+    * Start off with a set containing a single pair with the root node of the
+    * trie, and a count of one.
+    * For each input character:
+    *    for each node, count in the input set
+    *       traverse the arc for node, creating an entry in the output set { next(node), count }
+    *       If there is no valid transition, the count for that node is dropped.
+    *       If the new node represents a "token", then add that to the count of new root nodes.
+    *    add the root node to the output set with the accumulated count for the new root node.
+    *
+    * At each step along the input, the input set's node/count paris track the
+    * number of possible paths up to that point that would be at that node in
+    * the trie.  When we're done, any count on a node in the final set
+    * representing a token node represents a disting possible combination.
+    */
    using Pvec = Vec<std::pair<unsigned, unsigned long>, 10>;
    Pvec a, b, *in = &a, *out = &b;
    in->emplace_back(0, 1);
