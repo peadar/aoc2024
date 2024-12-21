@@ -2,75 +2,55 @@
 namespace {
 
 using Scalar = int;
-using Cost = unsigned;
-constexpr Cost MAXCOST = std::numeric_limits<Cost>::max();
+using Cost = unsigned short;
 
 struct Cell {
-   Cost cost{MAXCOST};
-   unsigned wall : 1;
-   Cell( char c ) : cost{MAXCOST}, wall{c == '#'} {}
+   static constexpr Cost MAXCOST = std::numeric_limits<Cost>::max() - 1;
+   static constexpr Cost WALL = std::numeric_limits<Cost>::max();
+   Cost cost;
+   Cell( char c ) : cost{ c == '#' ? WALL :MAXCOST} {}
+   bool wall() const { return cost == WALL; }
 };
-
-enum Direction { NORTH, EAST, SOUTH, WEST };
-
-enum Direction rotate_clockwise(Direction d, unsigned steps = 1) {
-   return Direction((unsigned(d) + steps) % 4);
-}
 
 struct Point {
    Scalar row{}, col{};
-   Point operator+ (const Point &rhs) const noexcept { return { row + rhs.row, col + rhs.col }; }
+   Point operator+ (const Point &rhs) const noexcept { return { Scalar(row + rhs.row), Scalar(col + rhs.col) }; }
    auto operator <=> (const Point &) const = default;
    unsigned mag() const { return abs(row) + abs(col); }
 };
 
-std::ostream &operator << (std::ostream &os, const Point &p2) {
-   return os << "[r=" << p2.row << ",c=" << p2.col << "]";
-}
-
+enum Direction { NORTH, EAST, SOUTH, WEST };
 constexpr Point velocities[] = { {Scalar(-1), 0}, {0, 1}, {1, 0}, {0, Scalar(-1)} };
 
 struct Maze {
    std::vector<Cell> cells;
    Scalar cols{}, rows{};
-   Point START;
-   Point END;
-
+   Point START, END;
    bool contains(Point p) { return p.row >= 0 && p.row < rows && p.col >= 0 && p.col < cols; }
    Cell &at(Point p) { return cells[p.row * cols + p.col]; }
    const Cell &at(Point p) const { return cells[p.row * cols + p.col]; }
-
    // our maze has a single direction, so we just have to find the first 
-   Cost pathfind(std::vector<Point> &path) {
-      std::deque<Point> Q;
-      Q.push_back(START);
+   std::vector<Point> pathfind() {
+      std::vector<Point> path;
+      path.push_back(START);
       at(START).cost = 0;
-      unsigned iterations;
-      for (iterations = 0; Q.front() != END; ++iterations) {
-         Point from = Q.front();
-         Q.pop_front();
-         path.push_back(from);
-
-         const Cell &existing = at(from);
+      for (size_t pos = 0; path[pos] != END; ++pos) {
          for ( auto d : { NORTH, SOUTH, EAST, WEST} ) {
+            Point &from = path[pos];
+            const Cell &existing = at(from);
             auto to = from + velocities[d];
             if (!contains(to))
                continue;
             auto &cell = at(to);
-            if (cell.wall || cell.cost <= existing.cost + 1)
+            if (cell.wall() || cell.cost <= existing.cost + 1)
                continue;
             cell.cost = existing.cost + 1;
-            Q.push_back(to);
+            path.push_back(to);
          }
-         if (Q.empty())
-            return MAXCOST;
+         assert(path.size() > pos);
       }
-      return at(Q.front()).cost;
+      return path;
    }
-
-   Maze(const Maze &) = default;
-   Maze(Maze &&) = default;
-
    Maze(std::istream &is) noexcept {
       cells.reserve(141 * 141);
       rows = 0;
@@ -78,47 +58,22 @@ struct Maze {
          std::string_view v = line;
          cols = 0;
          for (auto c : v) {
-               switch (c) {
-                  case 'S': START = Point{ rows, cols }; break;
-                  case 'E': END = Point{ rows, cols }; break;
-               }
-               cells.emplace_back(c);
-               ++cols;
+            switch (c) {
+               case 'S': START = Point{ rows, cols }; break;
+               case 'E': END = Point{ rows, cols }; break;
+            }
+            cells.emplace_back(c);
+            ++cols;
          }
          ++rows;
       }
    }
 };
 
-std::ostream &operator<<(std::ostream &os, const Maze &maze) {
-   for (Scalar row = 0; row < maze.rows; ++row) {
-      for (Scalar col = 0; col < maze.cols; ++col) {
-         Point p{row,col};
-         if (maze.START == p )
-            os << "[ST]";
-         else if (maze.END == p ) {
-            os << "[EN]";
-         } else {
-            const Cell &c = maze.at(p);
-            if (c.wall)
-               os << "####";
-            else if (c.cost == MAXCOST)
-               os << " .. ";
-            else
-               os << "." << std::setw(2) << c.cost << "." << std::setw(0);
-         }
-      }
-      os << "\n";
-   }
-   return os;
-}
-
 void solve(std::istream &is, std::ostream &os, int maxdistance, int threshold) {
    Maze maze(is);
-   std::vector<Point> path;
-   unsigned orig = maze.pathfind(path);
+   std::vector<Point> path = maze.pathfind();
 
-   std::map<unsigned, std::set<std::pair<Point, Point>>> savings;
    unsigned long total = 0;
 
    for (const auto &start : path) {
@@ -128,16 +83,11 @@ void solve(std::istream &is, std::ostream &os, int maxdistance, int threshold) {
             Point end = start + delta;
             if (!maze.contains(end))
                continue;
-            Cost startcost = maze.at(start).cost;
-            Cell endcell = maze.at(end);
-            if (!endcell.wall && endcell.cost > startcost + delta.mag()) {
-               Cost saving = endcell.cost - startcost - delta.mag();
-               if (saving >= threshold) {
-                  auto [_, added] = savings[saving].insert({start, end});
-                  if (added)
-                     total++;
-               }
-            }
+            const Cell &startcell = maze.at(start);
+            const Cell &endcell = maze.at(end);
+            if (!endcell.wall() && endcell.cost > startcell.cost + delta.mag() &&
+                  endcell.cost - startcell.cost - delta.mag() >= threshold)
+               total++;
          }
       }
    }
