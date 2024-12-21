@@ -21,6 +21,7 @@ struct Point {
    Scalar row{}, col{};
    Point operator+ (const Point &rhs) const noexcept { return { row + rhs.row, col + rhs.col }; }
    auto operator <=> (const Point &) const = default;
+   unsigned mag() const { return abs(row) + abs(col); }
 };
 
 std::ostream &operator << (std::ostream &os, const Point &p2) {
@@ -112,32 +113,38 @@ std::ostream &operator<<(std::ostream &os, const Maze &maze) {
    return os;
 }
 
-void part1(std::istream &is, std::ostream &os) {
+void solve(std::istream &is, std::ostream &os, int maxdistance, int threshold) {
    Maze maze(is);
    std::vector<Point> path;
    unsigned orig = maze.pathfind(path);
 
    std::map<unsigned, std::set<std::pair<Point, Point>>> savings;
-   unsigned total = 0;
+   unsigned long total = 0;
+
    for (const auto &start : path) {
-      for (auto delta : { Point{ 0, -2 }, { 0, 2 }, { 2, 0 }, { -2, 0 } }) {
-         Point end = start + delta;
-         if (!maze.contains(end))
-            continue;
-         Cost startcost = maze.at(start).cost;
-         Cell endcell = maze.at(end);
-         if (!endcell.wall && endcell.cost > startcost + 2) {
-            Cost saving = endcell.cost - startcost - 2;
-            savings[saving].insert({start, end});
-            if (saving >= 100)
-               ++total;
+      for (int rowdelta = -maxdistance; rowdelta <= maxdistance; ++rowdelta) {
+         for (int coldelta = -maxdistance + abs(rowdelta); coldelta <= maxdistance - abs(rowdelta); ++coldelta) {
+            Point delta = {rowdelta, coldelta};
+            Point end = start + delta;
+            if (!maze.contains(end))
+               continue;
+            Cost startcost = maze.at(start).cost;
+            Cell endcell = maze.at(end);
+            if (!endcell.wall && endcell.cost > startcost + delta.mag()) {
+               Cost saving = endcell.cost - startcost - delta.mag();
+               if (saving >= threshold) {
+                  auto [_, added] = savings[saving].insert({start, end});
+                  if (added)
+                     total++;
+               }
+            }
          }
       }
    }
-   for (auto &[saving, count] : savings)
-      os << "\nThere are " << count.size() << " cheats that save " << saving << " picoseconds.";
    os << "\n" << total;
 }
 
-aoc::Case P1{"part1", part1};
+aoc::Case P1{"part1", [](auto &is, auto &os) { solve(is, os, 2, 100); }};
+aoc::Case P2{"part2", [](auto &is, auto &os) { solve(is, os, 20, 100); }};
+aoc::Case EG{"eg", [](auto &is, auto &os) { solve(is, os, 20, 50); }};
 }
